@@ -35,7 +35,7 @@ class MovieApp:
             "Random movie",
             "Search movie",
             "Movies sorted by rating",
-            "Generate Website",
+            "Generate website",
         ]
         for index, option in enumerate(menu_options):
             print(f"{index}. {option}")
@@ -212,10 +212,10 @@ class MovieApp:
             movies = self._storage.list_movies()
             html_content = self._generate_html(movies)
 
-            with open("Website/index.html", "w", encoding="utf-8") as f:
+            with open("website/index.html", "w", encoding="utf-8") as f:
                 f.write(html_content)
 
-            print("Website was generated successfully.\n")
+            print("website was generated successfully.\n")
 
         except Exception as e:
             print(f"Error generating website: {e}\n")
