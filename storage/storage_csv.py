@@ -1,16 +1,20 @@
-# storage_csv.py
+# storage/storage_csv.py
 import csv
+import os
 
 class StorageCsv:
     """
     A class to handle movie storage in a CSV file.
     Implements the IStorage interface.
     """
-    def __init__(self, filename):
+    def __init__(self, filename="storage/movies.csv"):
         """
         Initializes the storage with a filename.
         """
         self._filename = filename
+        # Ensure the 'storage' directory exists
+        os.makedirs(os.path.dirname(os.path.abspath(self._filename)), exist_ok=True)
+
         self.movies = self._load_movies()
 
     def _load_movies(self):

@@ -8,8 +8,8 @@ def main():
     """
     Main function to create and run the MovieApp.
     """
-
-    storage = StorageCsv('storage/movies.csv')
+    #relative path to the storage folder
+    storage = StorageCsv('storage/movies.csv') #Correct path
     movie_app = MovieApp(storage)
     movie_app.run()
 

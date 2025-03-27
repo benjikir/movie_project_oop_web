@@ -1,7 +1,9 @@
 # movie_app.py
 import os
-import requests  # Import the requests library
+import requests
 import random
+
+#from storage.storage_csv import StorageCsv #REMOVE this line
 
 
 
@@ -13,7 +15,6 @@ class MovieApp:
         self._storage = storage
         self.movies = self._storage.list_movies()  # Load movies on initialization
         self._running = True
-        # OMDB_API_KEY="4d55412d" #include the api_key not in env extern include it here
         self.omdb_api_key = os.environ.get("OMDB_API_KEY") or "4d55412d"  # Get API key from environment variable or use hardcoded value as fallback
         if not self.omdb_api_key:
             print("Error: OMDB_API_KEY not found in environment variables.")
@@ -274,9 +275,9 @@ class MovieApp:
         while self._running:
             self._print_menu()
             try:
-                choice = int(input("Enter a Choice (0-9): "))  # Updated range
+                choice = int(input("Enter a Choice (0-9): "))
                 if choice not in command_map:
-                    print("Invalid choice. Please enter a number between 0 and 9.")  # Updated range
+                    print("Invalid choice. Please enter a number between 0 and 9.")
                     continue
                 if choice == 0:
                     print("Bye!")
@@ -284,6 +285,16 @@ class MovieApp:
                     continue
 
                 command = command_map[choice]
-                command()  # Execute the command
+                command()
             except ValueError:
                 print("Invalid input. Please enter a number.")
+
+#REMOVE this lines
+# Instantiate the storage class (adjust if needed)
+#storage = StorageCsv()
+
+# Create the MovieApp instance
+#movie_app = MovieApp(storage)
+
+# Run the application
+#movie_app.run()
