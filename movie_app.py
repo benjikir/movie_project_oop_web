@@ -1,9 +1,5 @@
 # movie_app.py
 import os
-from dotenv import load_dotenv
-
-load_dotenv()  # Load environment variables from .env file
-
 import requests  # Import the requests library
 import random
 
@@ -17,7 +13,8 @@ class MovieApp:
         self._storage = storage
         self.movies = self._storage.list_movies()  # Load movies on initialization
         self._running = True
-        self.omdb_api_key = os.environ.get("OMDB_API_KEY")  # Get API key from environment variable
+        # OMDB_API_KEY="4d55412d" #include the api_key not in env extern include it here
+        self.omdb_api_key = os.environ.get("OMDB_API_KEY") or "4d55412d"  # Get API key from environment variable or use hardcoded value as fallback
         if not self.omdb_api_key:
             print("Error: OMDB_API_KEY not found in environment variables.")
 
@@ -290,5 +287,3 @@ class MovieApp:
                 command()  # Execute the command
             except ValueError:
                 print("Invalid input. Please enter a number.")
-
-
