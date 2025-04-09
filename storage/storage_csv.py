@@ -96,7 +96,7 @@ class StorageCsv:
             print(f"Error: Movie with title '{title}' already exists.")
             return
 
-        self.movies[title] = movie_data
+        self.movies[title] = movie_data.copy() # Create a copy to prevent external modification
         self._save_movies()
 
     def delete_movie(self, movie_title):
