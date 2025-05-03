@@ -1,5 +1,3 @@
-# main.py
-
 import os
 from storage.storage_csv import StorageCsv
 from movie_app import MovieApp
@@ -17,10 +15,18 @@ def main():
     templates_dir_path = 'templates' # Jinja2 loader needs the directory path
 
     # Create the storage instance
-    storage = StorageCsv(csv_file_path)
+    try:
+        storage = StorageCsv(csv_file_path)
+    except Exception as e:
+        print(f"Error initializing storage: {e}")
+        return  # Exit if storage initialization fails
 
     # Create the MovieApp instance, passing the storage and template folder path
-    movie_app = MovieApp(storage, template_folder=templates_dir_path)
+    try:
+        movie_app = MovieApp(storage, template_folder=templates_dir_path)
+    except Exception as e:
+        print(f"Error initializing MovieApp: {e}")
+        return  # Exit if MovieApp initialization fails
 
     # Run the application
     movie_app.run()

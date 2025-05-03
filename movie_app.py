@@ -1,9 +1,8 @@
-# movie_app.py
 import os
 import requests
 import random
-import jinja2 # Explicit import is good practice
-from jinja2 import Environment, FileSystemLoader
+
+
 
 class MovieApp:
     def __init__(self, storage, template_folder='templates'):
@@ -15,7 +14,7 @@ class MovieApp:
             template_folder (str): The path to the folder containing HTML templates.
         """
         self._storage = storage
-        self.movies = {} # Initialize empty, load on demand or here
+        self.movies = {}  # Initialize empty, load on demand or here
         self._running = True
         self.omdb_api_key = os.environ.get("OMDB_API_KEY") or "4d55412d"  # Get API key or fallback
 
@@ -23,65 +22,49 @@ class MovieApp:
         self._load_initial_movies()
 
         if not self.omdb_api_key:
-            print("Warning: OMDB_API_KEY not found in environment variables. Add movie functionality will be limited.")
+            print(
+                "Warning: OMDB_API_KEY not found in environment variables. Add movie functionality will be limited.")
 
-        # --- Jinja2 Setup ---
+        # ---  Setup ---
         self.template_folder = template_folder
-        self.env = None # Initialize env to None
-        try:
-            # Check if template folder exists before creating loader
-            if not os.path.isdir(self.template_folder):
-                 print(f"Warning: Template folder '{self.template_folder}' does not exist. Website generation will fail.")
-                 # Optionally create it:
-                 # os.makedirs(self.template_folder, exist_ok=True)
-                 # print(f"Created template folder: '{self.template_folder}'")
-            else:
-                 # autoescape=True helps prevent Cross-Site Scripting (XSS) vulnerabilities
-                 self.env = Environment(
-                     loader=FileSystemLoader(self.template_folder),
-                     autoescape=jinja2.select_autoescape(['html', 'xml']) # Standard autoescape config
-                 )
-        except Exception as e:
-            print(f"Error initializing Jinja2 environment: {e}. Website generation disabled.")
-        # --- End Jinja2 Setup ---
+        # Create the template directory if it doesn't exist
+        os.makedirs(self.template_folder, exist_ok=True)
 
     def _load_initial_movies(self):
         """Loads movies from storage during initialization."""
         try:
             self.movies = self._storage.list_movies()
-            # print(f"Loaded {len(self.movies)} movies initially.") # Debugging
         except Exception as e:
             print(f"Error loading initial movies from storage: {e}")
-            self.movies = {} # Ensure movies is a dict even if loading fails
+            self.movies = {}  # Ensure movies is a dict even if loading fails
 
     def _refresh_movies_from_storage(self):
-         """Reloads the movie list from the storage."""
-         try:
-             self.movies = self._storage.list_movies()
-         except Exception as e:
-             print(f"Error refreshing movies from storage: {e}")
-             # Decide if you want to clear self.movies or keep the old ones
-
+        """Reloads the movie list from the storage."""
+        try:
+            self.movies = self._storage.list_movies()
+        except Exception as e:
+            print(f"Error refreshing movies from storage: {e}")
+            # Decide if you want to clear self.movies or keep the old ones
 
     def _print_menu(self):
         """Prints the available menu options."""
         print("\n********** My Movies Database **********")
         print("\nMenu:")
         menu_options = [
-            "Exit",                   # 0
-            "List Movies",            # 1
-            "Add Movie",              # 2
-            "Delete Movie",           # 3
-            "Update Movie",           # 4
-            "Stats",                  # 5
-            "Random movie",           # 6
-            "Search movie",           # 7
-            "Movies sorted by rating",# 8
-            "Generate templates",       # 9
+            "Exit",  # 0
+            "List Movies",  # 1
+            "Add Movie",  # 2
+            "Delete Movie",  # 3
+            "Update Movie",  # 4
+            "Stats",  # 5
+            "Random movie",  # 6
+            "Search movie",  # 7
+            "Movies sorted by rating",  # 8
+            "Generate website",  # 9
         ]
         for index, option in enumerate(menu_options):
             print(f"{index}. {option}")
-        print("-" * 40) # Wider separator
+        print("-" * 40)  # Wider separator
 
     def _get_movie_from_omdb(self, title):
         """Fetches movie data from OMDb API. Returns a dict or None."""
@@ -95,7 +78,7 @@ class MovieApp:
             url = f"http://www.omdbapi.com/?t={safe_title}&apikey={self.omdb_api_key}"
             # print(f"DEBUG: API URL: {url}") # Uncomment for debugging
 
-            response = requests.get(url, timeout=10) # Set a reasonable timeout
+            response = requests.get(url, timeout=10)  # Set a reasonable timeout
             response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
 
             data = response.json()
@@ -108,20 +91,22 @@ class MovieApp:
                     year_str = data.get("Year", "0")
                     # Take only the first part if it's a range, remove non-digits
                     year_part = ''.join(filter(str.isdigit, year_str.split('–')[0]))
-                    year = int(year_part) if year_part else 0 # Default to 0 if parsing fails
+                    year = int(year_part) if year_part else 0  # Default to 0 if parsing fails
 
                     rating_str = data.get("imdbRating", "N/A")
                     # Convert to float, handle "N/A"
                     rating = float(rating_str) if rating_str != "N/A" else 0.0
 
-                    poster = data.get("Poster", "") # Get poster, default to empty string
+                    poster = data.get("Poster", "")  # Get poster, default to empty string
                     # Optionally check if poster URL seems valid (basic check)
-                    if poster == "N/A": poster = ""
+                    if poster == "N/A":
+                        poster = ""
 
                     # Ensure title exists
                     fetched_title = data.get("Title", "").strip()
                     if not fetched_title:
-                        print(f"Warning: OMDb returned movie data without a title for query '{title}'. Skipping.")
+                        print(
+                            f"Warning: OMDb returned movie data without a title for query '{title}'. Skipping.")
                         return None
 
                     return {
@@ -131,7 +116,8 @@ class MovieApp:
                         "poster": poster,
                     }
                 except (ValueError, TypeError) as e:
-                    print(f"Error: Invalid data type received from OMDb API for '{title}': {e}. Data: {data}")
+                    print(
+                        f"Error: Invalid data type received from OMDb API for '{title}': {e}. Data: {data}")
                     return None
             else:
                 error_message = data.get('Error', 'Unknown error')
@@ -139,8 +125,8 @@ class MovieApp:
                 return None
 
         except requests.exceptions.Timeout:
-             print(f"Error: Request to OMDb API timed out for '{title}'.")
-             return None
+            print(f"Error: Request to OMDb API timed out for '{title}'.")
+            return None
         except requests.exceptions.RequestException as e:
             # This catches connection errors, DNS errors, invalid responses, etc.
             print(f"Error: Network problem or issue connecting to OMDb API: {e}")
@@ -151,7 +137,7 @@ class MovieApp:
 
     def _command_list_movies(self):
         """Lists all movies currently loaded in the app."""
-        self._refresh_movies_from_storage() # Ensure we have the latest data
+        self._refresh_movies_from_storage()  # Ensure we have the latest data
         if not self.movies:
             print("\nThe movie database is empty.\n")
             return
@@ -159,9 +145,10 @@ class MovieApp:
         print("\n--- Movie List ---")
         # Sort by title for consistent listing
         for title in sorted(self.movies.keys()):
-            details = self.movies.get(title, {}) # Use .get for safety
+            details = self.movies.get(title, {})  # Use .get for safety
             # Format output nicely, handling potentially missing data
-            rating_str = f"{details.get('rating', 0.0):.1f}" if isinstance(details.get('rating'), (int, float)) else "N/A"
+            rating_str = f"{details.get('rating', 0.0):.1f}" if isinstance(details.get('rating'),
+                                                                            (int, float)) else "N/A"
             year_str = str(details.get('year', 'N/A'))
             poster_str = "Yes" if details.get('poster') else "No"
 
@@ -177,10 +164,10 @@ class MovieApp:
             return
 
         # Check if already exists (consider case-insensitivity for robustness)
-        self._refresh_movies_from_storage() # Check against latest data
-        if title in self.movies: # Basic case-sensitive check
-             print(f"Movie '{title}' already exists in the database.\n")
-             return
+        self._refresh_movies_from_storage()  # Check against latest data
+        if title in self.movies:  # Basic case-sensitive check
+            print(f"Movie '{title}' already exists in the database.\n")
+            return
         # Optional: Case-insensitive check
         # if any(t.lower() == title.lower() for t in self.movies.keys()):
         #      print(f"Movie similar to '{title}' already exists (case-insensitive match).")
@@ -197,18 +184,18 @@ class MovieApp:
                 return
 
             try:
-                self._storage.add_movie(movie_data) # Let storage handle saving
-                self._refresh_movies_from_storage() # Update internal list
+                self._storage.add_movie(movie_data)  # Let storage handle saving
+                self._refresh_movies_from_storage()  # Update internal list
                 print(f"Movie '{movie_data.get('title', title)}' added successfully!\n")
             except Exception as e:
-                 print(f"Error saving movie '{title}' to storage: {e}\n")
+                print(f"Error saving movie '{title}' to storage: {e}\n")
         else:
             # Error message already printed by _get_movie_from_omdb
             print(f"Could not add movie '{title}'. See previous errors for details.\n")
 
     def _command_delete_movie(self):
         """Prompts user and deletes a movie from storage."""
-        self._refresh_movies_from_storage() # Ensure we check against current data
+        self._refresh_movies_from_storage()  # Ensure we check against current data
         if not self.movies:
             print("Movie database is empty, nothing to delete.\n")
             return
@@ -227,17 +214,17 @@ class MovieApp:
             # Confirmation dialog
             confirmation = input(f"Are you sure you want to delete '{title}'? (y/n): ").lower().strip()
             if confirmation == "y":
-                self._storage.delete_movie(title) # Tell storage to delete
-                self._refresh_movies_from_storage() # Update internal list
+                self._storage.delete_movie(title)  # Tell storage to delete
+                self._refresh_movies_from_storage()  # Update internal list
                 print(f"Movie '{title}' deleted successfully.\n")
             else:
                 print("Deletion cancelled.\n")
         except Exception as e:
-             print(f"Error deleting movie '{title}' from storage: {e}\n")
+            print(f"Error deleting movie '{title}' from storage: {e}\n")
 
     def _command_update_movie(self):
         """Prompts user for title and updates movie details in storage."""
-        self._refresh_movies_from_storage() # Get latest data
+        self._refresh_movies_from_storage()  # Get latest data
         if not self.movies:
             print("Movie database is empty, nothing to update.\n")
             return
@@ -247,7 +234,7 @@ class MovieApp:
             print("Movie title cannot be empty.\n")
             return
 
-        movie_to_update = self.movies.get(title) # Use .get for safety
+        movie_to_update = self.movies.get(title)  # Use .get for safety
         if not movie_to_update:
             print(f"Movie '{title}' not found in the database.\n")
             return
@@ -275,9 +262,8 @@ class MovieApp:
             current_poster = movie_to_update.get('poster', '')
             poster_prompt = f"  New poster URL [{current_poster if current_poster else 'None'}]: "
             new_poster = input(poster_prompt).strip()
-            # Only update if the input is different from current *and* not empty,
-            # or if explicitly set to some value to clear it (e.g., "none" or "clear")
-            if new_poster: # Update if *any* non-empty string is entered
+            # Only update if *any* non-empty string is entered
+            if new_poster:  # Update if *any* non-empty string is entered
                 update_data['poster'] = new_poster
             # No else needed, if blank, update_data['poster'] is not set
 
@@ -287,17 +273,17 @@ class MovieApp:
 
         if update_data:
             try:
-                self._storage.update_movie(title, update_data) # Tell storage to update
-                self._refresh_movies_from_storage() # Refresh internal list
+                self._storage.update_movie(title, update_data)  # Tell storage to update
+                self._refresh_movies_from_storage()  # Refresh internal list
                 print(f"Movie '{title}' updated successfully!\n")
             except Exception as e:
-                 print(f"Error updating movie '{title}' in storage: {e}\n")
+                print(f"Error updating movie '{title}' in storage: {e}\n")
         else:
             print("No changes provided. Update cancelled.\n")
 
     def _command_movie_stats(self):
         """Calculates and displays statistics using the storage method."""
-        self._refresh_movies_from_storage() # Use latest data
+        self._refresh_movies_from_storage()  # Use latest data
         if not self.movies:
             print("No movies available to calculate statistics.\n")
             return
@@ -308,32 +294,31 @@ class MovieApp:
 
             print("\n--- Movie Statistics ---")
             if stats:
-                 # Example: Assuming stats is a dict like {"Average Rating": 7.5, "Count": 10}
-                 print(f"Total Movies: {stats.get('Count', len(self.movies))}") # Use count from stats if available
+                # Example: Assuming stats is a dict like {"Average Rating": 7.5, "Count": 10}
+                print(f"Total Movies: {stats.get('Count', len(self.movies))}")  # Use count from stats if available
 
-                 avg_rating = stats.get("Average Rating")
-                 if isinstance(avg_rating, (int, float)):
-                      print(f"Average Rating: {avg_rating:.2f}")
-                 else:
-                      print(f"Average Rating: {avg_rating if avg_rating is not None else 'N/A'}")
+                avg_rating = stats.get("Average Rating")
+                if isinstance(avg_rating, (int, float)):
+                    print(f"Average Rating: {avg_rating:.2f}")
+                else:
+                    print(f"Average Rating: {avg_rating if avg_rating is not None else 'N/A'}")
 
-                 # Add more stats as returned by storage.movie_stats()
-                 # median = stats.get("Median Rating") etc.
+                # Add more stats as returned by storage.movie_stats()
+                # median = stats.get("Median Rating") etc.
 
             else:
-                 # Handle case where storage returns None or empty dict
-                 print("Could not retrieve statistics from storage.")
+                # Handle case where storage returns None or empty dict
+                print("Could not retrieve statistics from storage.")
             print("-" * 24 + "\n")
 
         except AttributeError:
-             print("Error: The storage object does not support the 'movie_stats' method.\n")
+            print("Error: The storage object does not support the 'movie_stats' method.\n")
         except Exception as e:
             print(f"Error calculating movie statistics: {e}\n")
 
-
     def _command_random_movie(self):
         """Selects and displays a random movie."""
-        self._refresh_movies_from_storage() # Use latest data
+        self._refresh_movies_from_storage()  # Use latest data
         if not self.movies:
             print("No movies available to select a random one.\n")
             return
@@ -344,19 +329,20 @@ class MovieApp:
 
             print("\n--- Random Movie ---")
             print(f"Title:  {movie.get('title', 'N/A')}")
-            rating_str = f"{movie.get('rating', 0.0):.1f}" if isinstance(movie.get('rating'), (int, float)) else "N/A"
+            rating_str = f"{movie.get('rating', 0.0):.1f}" if isinstance(movie.get('rating'),
+                                                                            (int, float)) else "N/A"
             print(f"Rating: {rating_str}")
             print(f"Year:   {movie.get('year', 'N/A')}")
             print(f"Poster: {movie.get('poster', 'N/A')}")
             print("-" * 20 + "\n")
-        except IndexError: # Should not happen if self.movies check passes, but good practice
-             print("Error: Could not select a random movie (list might be empty unexpectedly).\n")
+        except IndexError:  # Should not happen if self.movies check passes, but good practice
+            print("Error: Could not select a random movie (list might be empty unexpectedly).\n")
         except Exception as e:
             print(f"Error selecting or displaying random movie: {e}\n")
 
     def _command_search_movie(self):
         """Searches for movies by title substring (case-insensitive)."""
-        self._refresh_movies_from_storage() # Use latest data
+        self._refresh_movies_from_storage()  # Use latest data
         if not self.movies:
             print("No movies available to search.\n")
             return
@@ -377,16 +363,17 @@ class MovieApp:
             # Sort results alphabetically by title for clarity
             results.sort(key=lambda m: m.get('title', '').lower())
             for movie in results:
-                 rating_str = f"{movie.get('rating', 0.0):.1f}" if isinstance(movie.get('rating'), (int, float)) else "N/A"
-                 year_str = str(movie.get('year', 'N/A'))
-                 print(f"- {movie.get('title', 'N/A')} (Rating: {rating_str}, Year: {year_str})")
+                rating_str = f"{movie.get('rating', 0.0):.1f}" if isinstance(movie.get('rating'),
+                                                                                (int, float)) else "N/A"
+                year_str = str(movie.get('year', 'N/A'))
+                print(f"- {movie.get('title', 'N/A')} (Rating: {rating_str}, Year: {year_str})")
             print("-" * (30 + len(search_term)) + "\n")
         else:
             print(f"No movies found matching '{search_term}'.\n")
 
     def _command_movies_sorted_by_rating(self):
         """Lists movies sorted by rating (descending)."""
-        self._refresh_movies_from_storage() # Use latest data
+        self._refresh_movies_from_storage()  # Use latest data
         if not self.movies:
             print("No movies available to sort.\n")
             return
@@ -405,82 +392,76 @@ class MovieApp:
             sorted_movies = sorted(
                 valid_movies,
                 key=lambda movie: (-movie.get('rating', -1.0), movie.get('title', '').lower())
-             )
+            )
 
             print("\n--- Movies Sorted by Rating (Highest First) ---")
             for movie in sorted_movies:
-                 rating_str = f"{movie.get('rating', 0.0):.1f}" # Already checked it's a float/int
-                 year_str = str(movie.get('year', 'N/A'))
-                 print(f"- {movie.get('title', 'N/A')} (Rating: {rating_str}, Year: {year_str})")
+                rating_str = f"{movie.get('rating', 0.0):.1f}"  # Already checked it's a float/int
+                year_str = str(movie.get('year', 'N/A'))
+                print(f"- {movie.get('title', 'N/A')} (Rating: {rating_str}, Year: {year_str})")
             print("-" * 45 + "\n")
 
         except Exception as e:
-             print(f"Error sorting movies by rating: {e}\n")
-
+            print(f"Error sorting movies by rating: {e}\n")
 
     def _command_generate_website(self):
-        """Generates the templates HTML file using the Jinja2 template."""
-        # 1. Check if Jinja2 environment is ready
-        if not self.env:
-             print("Error: Jinja2 environment not initialized. Cannot generate templates.")
-             print("       (Check if the template folder exists and is accessible.)\n")
-             return
-
-        # 2. Ensure we have the latest movie data
+        """Generates a website displaying the movie collection."""
         self._refresh_movies_from_storage()
         if not self.movies:
-            print("No movies in the database to generate templates.\n")
+            print("No movies available to generate a website.\n")
             return
 
-        # 3. Define template and output file names/paths
-        template_name = 'index.html' # Name of the template file in the template_folder
-        output_dir = "templates"  # Name of the directory for the output file
-        output_filename = "index.html" # Name of the generated HTML file
-        output_path = os.path.join(output_dir, output_filename)
-
         try:
-            # 4. Load the specified template
-            try:
-                 template = self.env.get_template(template_name)
-            except jinja2.exceptions.TemplateNotFound:
-                 print(f"Error: Template file '{template_name}' not found in '{self.template_folder}'.")
-                 print("       Make sure the file exists and the template folder path is correct.\n")
-                 return
-            except Exception as e: # Catch other potential Jinja2 loading errors
-                 print(f"Error loading template '{template_name}': {e}\n")
-                 return
+            # 1. Generate the main index.html
+            self._generate_index_html()
 
-            # 5. Prepare data for the template (optional sorting)
-            # Sort movies by title for consistent display on the templates
-            movies_for_template = dict(sorted(self.movies.items()))
+            print(f"Website generated successfully in {self.template_folder}\n")
 
-            # 6. Render the template with the movie data
-            html_content = template.render(
-                movies=movies_for_template,
-                page_title="My Movie Collection" # Example of passing extra context
-            )
-
-            # 7. Ensure the output directory exists
-            try:
-                 os.makedirs(output_dir, exist_ok=True)
-            except OSError as e:
-                 print(f"Error creating output directory '{output_dir}': {e}\n")
-                 return
-
-            # 8. Write the rendered HTML to the output file
-            with open(output_path, "w", encoding="utf-8") as f:
-                f.write(html_content)
-
-            print(f"\nWebsite generated successfully!")
-            print(f"Output file: '{os.path.abspath(output_path)}'\n") # Show full path
-
-        except jinja2.exceptions.UndefinedError as e:
-            # Error if template uses a variable not passed in render()
-            print(f"Error rendering template: {e}. Check variables in '{template_name}'.\n")
         except Exception as e:
-            # Catch-all for other errors during rendering or file writing
-            print(f"An unexpected error occurred during templates generation: {e}\n")
+            print(f"Error generating website: {e}\n")
 
+    def _generate_index_html(self):
+        """Generates the main final_index.html file."""
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>My Movie App</title>
+            <link rel="stylesheet" href="style.css">
+        </head>
+        <body>
+            <div class="list-movies-title">
+                <h1>My Movie Collection</h1>
+            </div>
+            <ul class="movie-grid">
+        """
+
+        for title, movie in sorted(self.movies.items()):  # Sort movies by title
+            poster = movie.get('poster', '')
+            movie_title = movie.get('title', title)
+            year = movie.get('year', 'N/A')
+            rating = movie.get('rating', 'N/A')
+
+            html_content += f"""
+                <li class="movie-item">
+                    <div class="movie">
+                        {'<img class="movie-poster" src="{}" alt="{} Poster">'.format(poster, movie_title) if poster else '<div class="no-poster">No Poster Available</div>'}
+                        <h2 class="movie-title">{movie_title}</h2>
+                        <p class="movie-year">Year: {year}</p>
+                        <p>Rating: {rating}</p>
+                    </div>
+                </li>
+            """
+
+        html_content += """
+            </ul>
+        </body>
+        </html>
+        """
+
+        output_path = os.path.join(self.template_folder, 'final_index.html')
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
 
     def run(self):
         """
@@ -488,7 +469,7 @@ class MovieApp:
         """
         # Command map: maps choice number to (Display Name, function_to_call)
         command_map = {
-            0: ("Exit", lambda: setattr(self, '_running', False)), # Use lambda to modify state
+            0: ("Exit", lambda: setattr(self, '_running', False)),  # Use lambda to modify state
             1: ("List Movies", self._command_list_movies),
             2: ("Add Movie", self._command_add_movie),
             3: ("Delete Movie", self._command_delete_movie),
@@ -497,7 +478,7 @@ class MovieApp:
             6: ("Random movie", self._command_random_movie),
             7: ("Search movie", self._command_search_movie),
             8: ("Movies sorted by rating", self._command_movies_sorted_by_rating),
-            9: ("Generate templates", self._command_generate_website),
+            9: ("Generate website", self._command_generate_website),
         }
 
         self._running = True
@@ -510,8 +491,8 @@ class MovieApp:
 
                 # Input validation
                 if not choice_str.isdigit():
-                     print("\nInvalid input: Please enter a number.")
-                     continue # Ask for input again
+                    print("\nInvalid input: Please enter a number.")
+                    continue  # Ask for input again
 
                 choice = int(choice_str)
 
@@ -520,29 +501,98 @@ class MovieApp:
 
                     if action_name == "Exit":
                         print("\nBye!")
-                        action_func() # Sets self._running to False
+                        action_func()  # Sets self._running to False
                     else:
                         print(f"\n--- Executing: {action_name} ---")
-                        action_func() # Call the corresponding command method
+                        action_func()  # Call the corresponding command method
                         # Pause after command execution (except for Exit)
                         input("\nPress Enter to return to menu...")
                 else:
                     print("\nInvalid choice. Please enter a number between 0 and 9.")
 
-            except ValueError: # Should be caught by isdigit, but belt-and-suspenders
+            except ValueError:  # Should be caught by isdigit, but belt-and-suspenders
                 print("\nInvalid input: Please enter a number.")
-            except KeyboardInterrupt: # Handle Ctrl+C gracefully
-                 print("\n\nExiting application due to user interrupt.")
-                 self._running = False
-            except Exception as e: # Generic catch for unexpected errors within a command
-                 print(f"\n*** An unexpected error occurred: {e} ***")
-                 print("*** Please report this issue. ***")
-                 # Consider logging the full traceback here for debugging
-                 # import traceback
-                 # traceback.print_exc()
-                 input("\nPress Enter to try returning to menu...")
-
+            except KeyboardInterrupt:  # Handle Ctrl+C gracefully
+                print("\n\nExiting application due to user interrupt.")
+                self._running = False
+            except Exception as e:  # Generic catch for unexpected errors within a command
+                print(f"\n*** An unexpected error occurred: {e} ***")
+                print("*** Please report this issue. ***")
+                # Consider logging the full traceback here for debugging
+                # import traceback
+                # traceback.print_exc()
+                input("\nPress Enter to try returning to menu...")
 
         print("\nApplication finished.")
 
-# Note: The main execution block (if __name__ == "__main__":) should be in main.py
+
+class ListMovieTitles:
+    """
+    A class for displaying movie titles in a list format.
+    """
+
+    def __init__(self, movies):
+        """
+        Initializes the ListMovieTitles object with a dictionary of movies.
+
+        Args:
+            movies (dict): A dictionary where keys are movie titles and values are movie details.
+        """
+        self.movies = movies
+
+    def generate_html(self):
+        """
+        Generates an HTML unordered list of movie titles.
+
+        Returns:
+            str: An HTML string representing the list of movie titles.
+        """
+        html = "<ul>\n"
+        for title in sorted(self.movies.keys()):
+            movie = self.movies[title]
+            html += f"  <li>{movie.get('title', title)}</li>\n"
+        html += "</ul>\n"
+        return html
+
+
+class MovieGrid:
+    """
+    A class for displaying movies in a grid format, including posters.
+    """
+
+    def __init__(self, movies):
+        """
+        Initializes the MovieGrid object with a dictionary of movies.
+
+        Args:
+            movies (dict): A dictionary where keys are movie titles and values are movie details.
+        """
+        self.movies = movies
+
+    def generate_html(self):
+        """
+        Generates an HTML grid of movie posters and titles.
+
+        Returns:
+            str: An HTML string representing the movie grid.
+        """
+        html = '<div class="movie-grid">\n'
+        for title, movie in sorted(self.movies.items()):  # Sort movies by title
+            poster_url = movie.get('poster', '')
+            movie_title = movie.get('title', title)
+
+            html += '  <div class="movie-item">\n'
+            if poster_url:
+                html += f'    <img src="{poster_url}" alt="{movie_title} Poster">\n'
+            else:
+                html += f'    <div class="no-poster">No Poster Available</div>\n'
+            html += f'    <p>{movie_title}</p>\n'
+            html += '  </div>\n'
+        html += '</div>\n'
+        return html
+
+    def _slugify(self, title):
+        """Converts a movie title into a URL-friendly slug."""
+        slug = title.lower().replace(" ", "-")
+        slug = ''.join(char for char in slug if char.isalnum() or char == '-')
+        return slug
